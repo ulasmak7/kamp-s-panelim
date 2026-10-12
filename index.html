@@ -63,7 +63,7 @@ a{color:var(--ac2)}
 
 <section id="bud"><div class="card"><input id="bt" placeholder="Açıklama (örn. Yemekhane)"><div class="row"><input id="ba" type="number" min="0" placeholder="Tutar (₺)"><select id="bk"><option value="e">Gider</option><option value="i">Gelir / harçlık</option></select></div><button class="btn pri" onclick="addB()">Kaydet</button></div><div class="grid stats" id="bs"></div><div id="bl"></div></section>
 <section id="look"><div class="card"><h3>Arka plan</h3><p>Hazır bir tane seç, renk belirle ya da kendi fotoğrafını yükle.</p><div class="dots" id="bgs" style="margin:12px 0"></div><input id="bgc" type="color" value="#0b0d12" oninput="setBg('c',this.value)" style="height:44px;padding:4px"><input id="bgf" type="file" accept="image/*" onchange="bgFile(this)"><button class="btn" onclick="setBg('','')">Varsayılana dön</button></div></section>
-<section id="backup"><div class="card"><h3>Yedekle</h3><p>Tüm verilerini tek bir dosyaya indir.</p><button class="btn pri" style="margin-top:10px" onclick="doBackup()">Yedeği indir</button></div><div class="card"><h3>Geri yükle</h3><p style="margin-bottom:10px">Yedek dosyasını seç, veriler bu cihaza gelsin.</p><select id="bmode"><option value="m">Birleştir (mevcut verileri koru)</option><option value="o">Üzerine yaz (yedekteki gibi olsun)</option></select><input id="bf" type="file" accept=".json,application/json" onchange="doRestore(this)"></div><p id="bm" style="color:var(--mut)"></p></section>
+<section id="backup"><div class="card"><h3>Yedekle</h3><p>Tüm verilerini tek bir dosyaya indir.</p><button class="btn pri" style="margin-top:10px" onclick="doBackup()">Yedeği indir</button> <button class="btn" onclick="copyBackup()">Yedeği kopyala</button></div><div class="card"><h3>Geri yükle</h3><p style="margin-bottom:10px">Yedek dosyasını seç, veriler bu cihaza gelsin.</p><select id="bmode"><option value="m">Birleştir (mevcut verileri koru)</option><option value="o">Üzerine yaz (yedekteki gibi olsun)</option></select><input id="bf" type="file" onchange="doRestore(this)"><p style="margin:4px 0 8px">Dosya seçemiyorsan yedek metnini buraya yapıştır:</p><textarea id="bp" rows="3" placeholder="Yedek metni..."></textarea><button class="btn" onclick="applyBackup($('bp').value.trim())">Metinden yükle</button></div><p id="bm" style="color:var(--mut)"></p></section>
 </main>
 <script>
 const pages=[["home","🏠","Ana Sayfa"],["notes","📝","Notlar"],["sched","📅","Program"],["hw","✅","Ödevler"],["exam","⏰","Sınavlar"],["gpa","📊","Ortalama"],["abs","🚫","Devamsızlık"],["cards","🃏","Kartlar"],["calc","🧮","Final Hesabı"],["bud","💰","Bütçe"],["look","🎨","Görünüm"],["backup","💾","Yedek"]];
@@ -119,12 +119,15 @@ const KEYS=["notes","sched","hw","exam","gpa","abs","cards","bud"];
 const bmsg=t=>{$("bm").textContent=t};
 async function dl(name,text){try{const d=window.claude&&claude.use?await claude.use("downloads"):null;if(d){await d.save({filename:name,data:text});return}}catch(e){if(e&&e.code==="declined")return}
 const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
-async function doBackup(){const o={app:"kampus-panelim",v:1,date:new Date().toISOString(),theme:store.get("theme",""),bg:store.get("bg",{}),data:{}};KEYS.forEach(k=>o.data[k]=D[k]);await dl("kampus-yedek-"+td()+".json",JSON.stringify(o));bmsg("Yedek hazır. Dosyayı diğer cihaza gönderip oradan geri yükleyebilirsin.")}
-function doRestore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.app!=="kampus-panelim"||!o.data)throw 0;const ow=$("bmode").value==="o";let n=0;
+function backupText(){const o={app:"kampus-panelim",v:1,date:new Date().toISOString(),theme:store.get("theme",""),bg:store.get("bg",{}),data:{}};KEYS.forEach(k=>o.data[k]=D[k]);return JSON.stringify(o)}
+async function doBackup(){await dl("kampus-yedek-"+td()+".json",backupText());bmsg("Yedek hazır. Dosyayı diğer cihaza gönderip oradan geri yükleyebilirsin.")}
+async function copyBackup(){try{await navigator.clipboard.writeText(backupText());bmsg("Yedek kopyalandı. Diğer cihazda yapıştırıp yükleyebilirsin.")}catch(e){bmsg("Kopyalanamadı. Dosya olarak indirmeyi dene.")}}
+function doRestore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{applyBackup(r.result);inp.value=""};r.readAsText(f)}
+function applyBackup(txt){try{const o=JSON.parse(txt);if(o.app!=="kampus-panelim"||!o.data)throw 0;const ow=$("bmode").value==="o";let n=0;
 KEYS.forEach(k=>{const a=Array.isArray(o.data[k])?o.data[k]:[];if(ow){D[k]=a;n+=a.length}else{const have=new Set(D[k].map(x=>JSON.stringify(x)));a.forEach(x=>{if(!have.has(JSON.stringify(x))){D[k].push(x);n++}})}store.set(k,D[k])});
 D.exam.sort((a,b)=>a.d.localeCompare(b.d));store.set("exam",D.exam);
 if(ow){if(typeof o.theme==="string"&&o.theme)setTh(o.theme);if(o.bg&&o.bg.v){store.set("bg",o.bg);applyBg(o.bg)}}
-render();bmsg(n+" kayıt "+(ow?"yüklendi.":"eklendi."))}catch(e){bmsg("Bu dosya geçerli bir Kampüs Panelim yedeği değil.")}inp.value=""};r.readAsText(f)}
+render();bmsg(n+" kayıt "+(ow?"yüklendi.":"eklendi."));$("bp").value=""}catch(e){bmsg("Bu geçerli bir Kampüs Panelim yedeği değil.")}}
 // çizim
 function render(){
 $("nl").innerHTML=D.notes.length?D.notes.map((n,i)=>`<div class="card item"><div><h3>${esc(n.t||"Başlıksız")}</h3><p style="white-space:pre-wrap">${esc(n.b)}</p></div>${del("notes",i)}</div>`).join(""):'<p style="color:var(--mut)">Henüz not yok.</p>';

@@ -39,6 +39,21 @@ input,textarea,select{width:100%;background:#0f121a;color:var(--tx);border:1px s
 .bar{height:8px;background:#0f121a;border-radius:6px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--ac2)}
 .warn{color:#fbbf24}.bad{color:#f87171}.ok{color:#4ade80}
 a{color:var(--ac2)}
+nav{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+nav button{transition:transform .2s,background .2s,color .2s,box-shadow .2s}
+nav button b{display:inline-block;transition:transform .25s}
+nav button:hover{color:var(--tx);background:#ffffff12;transform:translateY(-3px)}
+nav button:hover b{transform:scale(1.25) rotate(-8deg)}
+nav button.on{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;box-shadow:0 6px 20px color-mix(in srgb,var(--ac) 50%,transparent)}
+nav button.on b{animation:pop .45s}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+section.on{animation:fade .35s ease}
+.stats .card{transition:transform .2s}.stats .card:hover{transform:translateY(-4px)}
+h1{background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.dots{flex-wrap:wrap}
+@media(min-width:900px){nav::before{content:"🎓 Kampüs Panelim";font-weight:700;font-size:1.05rem;padding:4px 12px 16px;color:var(--tx)}nav button:hover{transform:translateX(4px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 <header><h1>🎓 Kampüs Panelim</h1><p>Notlar, ödevler, sınavlar — hepsi tek yerde.</p><div class="q" id="qt"></div><div class="dots" id="th"></div></header>
 <nav id="nav"></nav>
@@ -62,7 +77,7 @@ a{color:var(--ac2)}
 <section id="calc"><div class="card"><div class="row"><input id="c1" type="number" placeholder="Vize notu" oninput="calc()"><input id="c2" type="number" placeholder="Vize ağırlığı %" value="40" oninput="calc()"></div><div class="row"><input id="c3" type="number" placeholder="Final ağırlığı %" value="60" oninput="calc()"><input id="c4" type="number" placeholder="Geçme notu" value="50" oninput="calc()"></div></div><div class="card" style="text-align:center"><p>Finalden almalısın</p><div class="big" id="cr">—</div><p id="cx"></p></div></section>
 
 <section id="bud"><div class="card"><input id="bt" placeholder="Açıklama (örn. Yemekhane)"><div class="row"><input id="ba" type="number" min="0" placeholder="Tutar (₺)"><select id="bk"><option value="e">Gider</option><option value="i">Gelir / harçlık</option></select></div><button class="btn pri" onclick="addB()">Kaydet</button></div><div class="grid stats" id="bs"></div><div id="bl"></div></section>
-<section id="look"><div class="card"><h3>Arka plan</h3><p>Hazır bir tane seç, renk belirle ya da kendi fotoğrafını yükle.</p><div class="dots" id="bgs" style="margin:12px 0"></div><input id="bgc" type="color" value="#0b0d12" oninput="setBg('c',this.value)" style="height:44px;padding:4px"><input id="bgf" type="file" accept="image/*" onchange="bgFile(this)"><button class="btn" onclick="setBg('','')">Varsayılana dön</button></div></section>
+<section id="look"><div class="card"><h3>Arka plan</h3><p>Hazır bir tane seç, renk belirle ya da kendi fotoğrafını yükle.</p><small style="color:var(--mut)">Renkli</small><div class="dots" id="bgs" style="margin:8px 0 14px"></div><small style="color:var(--mut)">Şekilli</small><div class="dots" id="bgp" style="margin:8px 0 14px"></div><input id="bgc" type="color" value="#0b0d12" oninput="setBg('c',this.value)" style="height:44px;padding:4px"><input id="bgf" type="file" accept="image/*" onchange="bgFile(this)"><button class="btn" onclick="setBg('','')">Varsayılana dön</button></div></section>
 <section id="backup"><div class="card"><h3>Yedekle</h3><p>Tüm verilerini tek bir dosyaya indir.</p><button class="btn pri" style="margin-top:10px" onclick="doBackup()">Yedeği indir</button> <button class="btn" onclick="copyBackup()">Yedeği kopyala</button></div><div class="card"><h3>Geri yükle</h3><p style="margin-bottom:10px">Yedek dosyasını seç, veriler bu cihaza gelsin.</p><select id="bmode"><option value="m">Birleştir (mevcut verileri koru)</option><option value="o">Üzerine yaz (yedekteki gibi olsun)</option></select><input id="bf" type="file" onchange="doRestore(this)"><p style="margin:4px 0 8px">Dosya seçemiyorsan yedek metnini buraya yapıştır:</p><textarea id="bp" rows="3" placeholder="Yedek metni..."></textarea><button class="btn" onclick="applyBackup($('bp').value.trim())">Metinden yükle</button></div><p id="bm" style="color:var(--mut)"></p></section>
 </main>
 <script>
@@ -109,10 +124,21 @@ const need=(p-m*w/100)/(f/100);$("cr").textContent=need<=0?"0":need.toFixed(1);
 $("cx").textContent=need<=0?"Finalden 0 alsan bile geçme notuna ulaşırsın 🎉":need>100?"Bu vize notuyla geçme notuna ulaşmak mümkün görünmüyor.":"Geçme notu "+p+" için en az bu notu almalısın."}
 // arka plan
 const grads=["linear-gradient(135deg,#1b1740,#0f2a36)","linear-gradient(135deg,#0f2027,#2c5364)","linear-gradient(135deg,#1f1c2c,#928dab)","linear-gradient(135deg,#232526,#414345)","linear-gradient(135deg,#134e5e,#71b280)","linear-gradient(135deg,#3a1c1c,#7a2e2e)"];
-function applyBg(b){const st=document.body.style;if(!b||!b.v){st.removeProperty("background");return}st.background=b.t==="i"?`url(${b.v}) center/cover fixed`:b.t==="g"?b.v+" fixed":b.v}
+const pats=[
+"radial-gradient(#ffffff2e 1.5px,transparent 1.5px) 0 0/22px 22px,#0b0d12",
+"linear-gradient(#ffffff12 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,#ffffff12 1px,transparent 1px) 0 0/28px 28px,#0b0d12",
+"repeating-linear-gradient(45deg,#ffffff0d 0 10px,transparent 10px 20px),#10131b",
+"conic-gradient(#ffffff0d 25%,transparent 0 50%,#ffffff0d 0 75%,transparent 0) 0 0/44px 44px,#0b0d12",
+"linear-gradient(135deg,#ffffff0f 25%,transparent 25%) -20px 0/40px 40px,linear-gradient(225deg,#ffffff0f 25%,transparent 25%) -20px 0/40px 40px,linear-gradient(315deg,#ffffff0f 25%,transparent 25%) 0 0/40px 40px,linear-gradient(45deg,#ffffff0f 25%,transparent 25%) 0 0/40px 40px,#0b0d12",
+`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='20'%3E%3Cpath d='M0 10Q20 0 40 10T80 10' fill='none' stroke='%23ffffff1c' stroke-width='2'/%3E%3C/svg%3E") 0 0/80px 20px,#0b1620`,
+"radial-gradient(2px 2px at 20px 30px,#fff9,transparent) 0 0/160px 160px,radial-gradient(1.5px 1.5px at 90px 70px,#fff7,transparent) 0 0/160px 160px,radial-gradient(2px 2px at 140px 20px,#fffb,transparent) 0 0/160px 160px,radial-gradient(1px 1px at 60px 120px,#fff8,transparent) 0 0/160px 160px,#070914",
+"radial-gradient(circle at 50% 50%,transparent 0 14px,#ffffff14 15px 16px,transparent 17px) 0 0/48px 48px,#0b0d12"
+];
+function applyBg(b){const st=document.body.style;if(!b||!b.v){st.removeProperty("background");return}st.background=b.t==="i"?`url(${b.v}) center/cover fixed`:b.t==="g"?b.v+" fixed":b.t==="p"?(pats[b.v]||""):b.v}
 function setBg(t,v){const b=t?{t,v}:{};store.set("bg",b);applyBg(b)}
 function bgFile(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);setBg("i",c.toDataURL("image/jpeg",.7))};im.src=r.result};r.readAsDataURL(f)}
-$("bgs").innerHTML=grads.map((g,i)=>`<button class="dot" aria-label="Arka plan ${i+1}" style="background:${g};width:44px;height:44px;border-radius:10px" onclick="setBg('g',grads[${i}])"></button>`).join("");
+const mk=(id,list,t)=>{list.forEach((g,i)=>{const b=document.createElement("button");b.className="dot";b.setAttribute("aria-label","Arka plan");b.style.cssText="width:44px;height:44px;border-radius:10px";b.style.background=g;b.onclick=()=>setBg(t,t==="p"?String(i):g);$(id).appendChild(b)})};
+mk("bgs",grads,"g");mk("bgp",pats,"p");
 applyBg(store.get("bg",{}));
 // yedek
 const KEYS=["notes","sched","hw","exam","gpa","abs","cards","bud"];
